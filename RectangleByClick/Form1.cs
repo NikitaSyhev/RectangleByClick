@@ -7,16 +7,31 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
+
+//Доработать рассматриваемый на занятии (RectangleByClick) проектследующим образом:
+//001 ячейки(клеточки) при создании чередуются: нечётные челёные, чётные красные. - DONE
+//002 запретить наложение областей. клеточка не создаётся, если перекрывает существующую. - DONE
+//003* добавить возможность перетаскивания клетки по форме. - DONE, но не до конца корректно
+//004* добавить возможность удаления выбранной клетки. - DONE
+//005** добавить возможность сохранения текущего состояния. -DONE
+
 namespace RectangleByClick
 {
     public partial class Form1 : Form
     {
         Graphics g;
         List<Figure> rectangles_lst = new List<Figure>();
+        int counterCell = 0; // счетчик для подсчета ячеек ( для выбора цвета)
+        private bool isDragging = false;         // флаг
+        private Point coordinatesMove;
+        private Figure selectedFigure = null;
         public Form1()
         {
             InitializeComponent();
             initCanvas();
+            MessageBox.Show("*создать ячейку - двойной клик.\n**удалить ячейку - одинарный клик");
+            saveBtn.Location = new Point(this.ClientSize.Width - saveBtn.Width - 10, this.ClientSize.Height - saveBtn.Height - 10);
+
         }
         private void initCanvas()
         {
@@ -24,7 +39,6 @@ namespace RectangleByClick
         }
         private void addCell(Point point, Brush brush)
         {
-            //this.Paint += Form1_Paint;
             Rectangle alarm = new Rectangle(0, 0, 135, 135);
             if (alarm.Contains(point))
             {
@@ -34,40 +48,44 @@ namespace RectangleByClick
             int height = 90;
             int width = 90;
             Rectangle rectCell = new Rectangle(
-                point.X - (width/2), point.Y - (height/2)
+                point.X - (width / 2), point.Y - (height / 2)
                 , width, height);
-            //if (rectCell.Contains(20,20))
-            //{
-            //    return;
-            //}
-            
-            //MessageBox.Show($"Rectangle set {rectCell.Width} : {rectCell.Height}" );
+            foreach (var item in rectangles_lst)  // заперт на наложение областей
+            {
+                if (item.rectangle.IntersectsWith(rectCell))
+                {
+                    return;
+                }
+            }
             Figure figure = new Figure(rectCell, brush);
-            
-            //MessageBox.Show($"Form {figure.rectangle.Width} : {figure.rectangle.Height}" );
             rectangles_lst.Add(figure);
             g.Clear(BackColor);
             foreach (var item in rectangles_lst)
             {
                 g.FillRectangle(item.brush, item.rectangle);
             }
-            //this.Refresh();
         }
-
-
-
-        private void Form1_Paint(object sender, PaintEventArgs e)
+        private void deleteCell()
         {
-            Graphics g = e.Graphics;
-            Rectangle rectCell = new Rectangle(10, 10, 90, 90);
-            g.FillRectangle(Brushes.DarkGreen, rectCell);
-            MessageBox.Show("Form1_Paint");
-
+            if (selectedFigure != null)
+            {
+                rectangles_lst.Remove(selectedFigure);
+                selectedFigure = null;
+                Refresh();
+            }
         }
 
         private void Form1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            addCell(e.Location, Brushes.DarkGreen);
+            counterCell++;
+            if (counterCell % 2 == 0)
+            {
+                addCell(e.Location, Brushes.Red);
+            }
+            else
+            {
+                addCell(e.Location, Brushes.Green);
+            }
         }
 
         private void Form1_Resize(object sender, EventArgs e)
@@ -78,8 +96,65 @@ namespace RectangleByClick
             {
                 mess += $"№{++counter} {item.rectangle.X} : " +
                     $"{item.rectangle.Y} " + "\n";
-            }    
-            MessageBox.Show($"{mess}");
+            }
+        }
+
+        private void Form1_MouseDown(object sender, MouseEventArgs e)
+        {
+            foreach (var item in rectangles_lst)
+            {
+                if (item.rectangle.Contains(e.Location))
+                {
+                    isDragging = true;
+                    coordinatesMove = new Point(e.X - item.rectangle.X, e.Y - item.rectangle.Y);
+                    selectedFigure = item;
+                    break;
+                }
+            }
+        }
+
+        private void Form1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isDragging && selectedFigure != null)
+            {
+                selectedFigure.rectangle = new Rectangle(e.X - coordinatesMove.X, e.Y - coordinatesMove.Y, selectedFigure.rectangle.Width, selectedFigure.rectangle.Height);
+
+                Refresh();
+            }
+        }
+
+        private void Form1_MouseUp(object sender, MouseEventArgs e)
+        {
+            isDragging = false;
+            selectedFigure = null;
+
+        }
+
+        private void Form1_MouseClick(object sender, MouseEventArgs e)
+        {
+            deleteCell();
+
+        }
+        private void SaveFile() // метод сохранения в PNG
+        {
+            using (SaveFileDialog saveDialog = new SaveFileDialog())
+            {
+                saveDialog.Filter = "PNG Image|*.png";
+                saveDialog.Title = "Save Image";
+                if (saveDialog.ShowDialog() == DialogResult.OK)
+                {
+                    using (Bitmap bitmap = new Bitmap(this.Width, this.Height))
+                    {
+                        this.DrawToBitmap(bitmap, new Rectangle(0, 0, this.Width, this.Height));
+                        bitmap.Save(saveDialog.FileName, System.Drawing.Imaging.ImageFormat.Png);
+                    }
+                }
+            }
+        }
+
+        private void button1_MouseClick(object sender, MouseEventArgs e)
+        {
+            SaveFile();
         }
     }
 }
