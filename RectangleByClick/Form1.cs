@@ -25,12 +25,16 @@ namespace RectangleByClick
         private bool isDragging = false;         // флаг
         private Point coordinatesMove;
         private Figure selectedFigure = null;
+
+        public object MouseButton { get; private set; }
+
         public Form1()
         {
             InitializeComponent();
             initCanvas();
-            MessageBox.Show("*создать ячейку - двойной клик.\n**удалить ячейку - одинарный клик");
-            saveBtn.Location = new Point(this.ClientSize.Width - saveBtn.Width - 10, this.ClientSize.Height - saveBtn.Height - 10);
+            MessageBox.Show("*создать ячейку - двойной клик.\n**удалить ячейку - клик правой кнопкой мыши");
+            saveBtn.Location = new Point(this.ClientSize.Width - saveBtn.Width - 10, this.ClientSize.Height - saveBtn.Height - 10); //кнопка в правом нижнем углу
+            
 
         }
         private void initCanvas()
@@ -132,8 +136,10 @@ namespace RectangleByClick
 
         private void Form1_MouseClick(object sender, MouseEventArgs e)
         {
-            deleteCell();
-
+            if (e.Button == MouseButtons.Right)
+            {
+                deleteCell();
+            }
         }
         private void SaveFile() // метод сохранения в PNG
         {
