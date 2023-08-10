@@ -26,8 +26,6 @@ namespace RectangleByClick
         private Point coordinatesMove;
         private Figure selectedFigure = null;
 
-        public object MouseButton { get; private set; }
-
         public Form1()
         {
             InitializeComponent();
